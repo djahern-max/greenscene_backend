@@ -854,8 +854,8 @@ def _response_page(
             Join Zoom Call →
         </a>"""
     if show_site_link:
-        btn = """
-        <a href="https://ryzerecruiting.com"
+        btn = f"""
+        <a href="{settings.FRONTEND_URL}"
            style="display:inline-block;margin-top:24px;background:#f0f2f5;color:#0a66c2;
                   text-decoration:none;font-weight:700;padding:14px 32px;border-radius:10px;
                   font-size:15px;font-family:sans-serif;">

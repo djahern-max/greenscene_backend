@@ -49,7 +49,7 @@ class TenantBranding:
 
     @property
     def email_from_line(self) -> str:
-        # Resend "from" header, e.g. 'Acme Recruiting <dane@ryze.ai>'
+        # Resend "from" header, e.g. 'Acme Recruiting <hello@greenscene.io>'
         return f"{self.brand_name} <{self.from_email}>"
 
     @property

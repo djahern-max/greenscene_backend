@@ -40,11 +40,8 @@ app.add_middleware(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://ryze.ai",
-        "https://www.ryze.ai",
-        "https://api.ryze.ai",
-        "https://ryzerecruiting.com",
-        "https://www.ryzerecruiting.com",
+        "https://greenscene.io",
+        "https://www.greenscene.io",
         "http://localhost:5173",
         "http://localhost:3000",
     ],

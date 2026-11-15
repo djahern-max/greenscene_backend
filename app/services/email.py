@@ -463,7 +463,7 @@ def send_cancellation_email(
             </div>
 
             <p style="color: #334155; font-size: 15px;">
-                Visit <a href="{settings.FRONTEND_URL}" style="color: #0a66c2;">ryze.ai</a>
+                Visit <a href="{settings.FRONTEND_URL}" style="color: #0a66c2;">our website</a>
                 to schedule a new time.
             </p>
 
@@ -1392,7 +1392,7 @@ def send_welcome_invite_email(
                     <tr>
                         <td style="padding:8px 0;color:#64748b;font-size:14px;width:40%;">Login URL</td>
                         <td style="padding:8px 0;font-size:14px;">
-                            <a href="https://ryze.ai/auth" style="color:#0a66c2;font-weight:600;">https://ryze.ai/auth</a>
+                            <a href="{settings.FRONTEND_URL}/auth" style="color:#0a66c2;font-weight:600;">{settings.FRONTEND_URL}/auth</a>
                         </td>
                     </tr>
                     <tr>
@@ -1413,7 +1413,7 @@ def send_welcome_invite_email(
             </div>
 
             <div style="text-align:center;margin:32px 0;">
-                <a href="https://ryze.ai/auth"
+                <a href="{settings.FRONTEND_URL}/auth"
                    style="background:#0a66c2;color:#ffffff;padding:14px 32px;border-radius:6px;
                           text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
                     Log In to RYZE.ai →
@@ -1476,7 +1476,7 @@ def send_self_serve_welcome_email(
                     <tr>
                         <td style="padding:8px 0;color:#64748b;font-size:14px;width:40%;">Login URL</td>
                         <td style="padding:8px 0;font-size:14px;">
-                            <a href="https://ryze.ai/auth" style="color:#0a66c2;font-weight:600;">https://ryze.ai/auth</a>
+                            <a href="{settings.FRONTEND_URL}/auth" style="color:#0a66c2;font-weight:600;">{settings.FRONTEND_URL}/auth</a>
                         </td>
                     </tr>
                     <tr>
@@ -1491,7 +1491,7 @@ def send_self_serve_welcome_email(
             </div>
 
             <div style="text-align:center;margin:32px 0;">
-                <a href="https://ryze.ai/auth"
+                <a href="{settings.FRONTEND_URL}/auth"
                    style="background:#0a66c2;color:#ffffff;padding:14px 32px;border-radius:6px;
                           text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
                     Log In to RYZE.ai →
