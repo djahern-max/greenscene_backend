@@ -2,6 +2,8 @@
 
 > **Line numbers are as of commit `6434b11`.** The live-bugs fix task (commits `b896344`, `fb1fb01`, `52dca4e`, 2026-11-15) moved some lines in `app/api/auth.py`, `app/api/admin_invite.py`, `app/api/bookings.py`, `app/services/notifications.py` and `app/services/scheduler.py`, and fixed live bugs 1–3 below. The tables have not been re-numbered.
 
+> **2026-11-15 — narrow rebrand acted on B, C (except the SMS-consent sentence, "RYZE GROUP, Inc." and the C.1 prompt framing) and D in `app/` and `.env.example`** (commits `59e452e`, `954a34f`, `b4aad93`, `61d3ac6`, `2f899da`). A, E, F and the D rows outside `app/` (seed, manual-test and script addresses, `spaces.py:40`) were not touched. The tables below still show the text as it was.
+
 Date: 2026-11-15
 Repo: `greenscene_backend`, working tree at commit `aca0b4e` plus this task's edit to `context/current-feature.md`.
 Scope: findings only. No file under `app/`, `alembic/`, `tests/`, `scripts/`, no root-level script, no `.env*` file and not `CLAUDE.md` was changed. Nothing was renamed. `greenscene_frontend` and both original folders were not touched.

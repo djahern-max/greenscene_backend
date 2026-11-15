@@ -5,7 +5,7 @@ FastAPI backend for Greenscene (greenscene.io) — a multi-tenant recruiting and
 
 **Origin:** forked 2026-11-15 from `ryzerecruiting_backend` at commit `d3edd13`. Later work in the original repo (tenant restructure parts 1–3, the "Nice ATS" name) is not in this repo and is not the plan here. The original repo and its folder (`/Users/dane/code/ryzerecruiting_backend`) are Dane's preserved fallback — **never modify, commit to, or push from them.**
 
-**The code still says RYZE.** Strings, emails, PDFs and config are un-rebranded; rebranding is a separate queued task. The sections below describe the code as it is today, so they still say RYZE where the code does.
+**Display text says Greenscene; some things still say RYZE on purpose.** The narrow rebrand (2026-11-15) changed what a person reads — the default brand name, the platform welcome emails, the public booking pages, the API title — and moved the sender and links to greenscene.io. Still RYZE by design: the `ryze` tenant slug (GUARDRAIL below), the legal entity "RYZE GROUP, Inc.", the SMS-consent sentence (it must match the Twilio registration), internal names (`RYZE_TENANT`, `_ryze_defaults`), seed and fixture addresses, and comments that call the house tenant "RYZE". The sections below say RYZE where they mean that house tenant.
 
 **Tenant model (direction note, no code changed):** in the old product a tenant was a recruiting firm with employer clients and candidates. In Greenscene a tenant is expected to be a company hiring for itself. The data model (`tenants`, `employer_profiles`, `job_orders`, `candidates`) still has the recruiting-firm shape; whether the `employer_profiles` layer survives is an open design question.
 
@@ -56,12 +56,12 @@ Where the slug is functional (files and counts as of the fork):
 ## Tenant branding — resolver EXISTS, use it
 The per-tenant branding resolver is **implemented** at `app/services/branding.py` — do not re-implement it or go looking for `app/core/tenant_branding.py` (an older doc referenced that path; it never existed).
 
-- `get_branding(db, tenant_id)` returns a frozen `TenantBranding` dataclass. **Every field falls back individually to RYZE's global defaults** (`app.core.config.settings`), so a tenant with all-NULL override columns behaves exactly like RYZE. It is safe to call with `db=None` or an unknown tenant — you get RYZE defaults.
+- `get_branding(db, tenant_id)` returns a frozen `TenantBranding` dataclass. **Every field falls back individually to the platform defaults** — brand name `"Greenscene"`, the rest from `app.core.config.settings` — so a tenant with all-NULL override columns behaves exactly like the `ryze` house tenant. It is safe to call with `db=None` or an unknown tenant — you get the platform defaults.
 - Already migrated onto the resolver: `app/services/notifications.py` (all notify functions take `tenant_id` + `db` and resolve branding) and `app/services/email.py` (all senders take a `branding` parameter). Admins can override whitelisted branding fields via `GET/PATCH /api/settings/tenant` in `app/api/settings.py`.
 - **Still hardcoded — remaining migration targets:** the PDF templates (`candidate_pdf_template.py`, `employer_pdf_template.py`, `job_order_pdf_template.py`) bake `RYZE.ai` / `RYZE.AI` into their footers. Verify `ai_brief.py` and `calendar.py` before assuming either way.
 - **Notify call sites must name their tenant:** every `notify_*` function takes `tenant_id` and `db` as required keyword-only arguments (no defaults). Pass the row's own tenant — `booking.tenant_id or RYZE_TENANT` — and the live session. The call sites swallow exceptions, so a missing argument would only be logged at runtime; `tests/test_notify_call_sites.py` statically fails on any `notify_*(` call under `app/` that omits either one.
 - **Secret handling:** `tenant.twilio_auth_token` is a credential-column stub for a future per-number model. Do NOT populate it in production until it's encrypted at rest. In the shared-sender model, tenants leave `twilio_*` NULL and ride on RYZE's number.
-- **Resend:** `from_email` must be a Resend-verified domain. Until a firm verifies its own domain, leave its `from_email` NULL — mail sends from RYZE's verified address with the firm's display name and the firm's `reply_to`.
+- **Resend:** `from_email` must be a Resend-verified domain. Until a firm verifies its own domain, leave its `from_email` NULL — mail sends from the platform address (`FROM_EMAIL`, default `hello@greenscene.io`) with the firm's display name and the firm's `reply_to`.
 
 ## Deploy & migration workflow — no host yet
 There is no production server. The droplet that hosted `api.ryze.ai` is gone and hosting is TBD. Until a host exists, a task ends at `git push origin main` plus local verification.
@@ -90,7 +90,7 @@ On that server the service to stop before a migration was `ryze-api` (gunicorn).
 
 ## Conventions
 - **Route ordering matters:** static routes like `/me` must be declared before `/{id}` routes in the same router, or FastAPI treats `me` as a path param.
-- **Resend** only sends from the verified `ryze.ai` domain — `from_email` stays fixed, vary `reply_to` and display name instead (see Tenant branding above).
+- **Resend** sends from `greenscene.io` (`hello@greenscene.io`) once that domain is verified in Resend — until then no email sends. `from_email` stays fixed; vary `reply_to` and display name instead (see Tenant branding above).
 - CORS errors in the browser console almost always mean a server-side 500 — check the uvicorn terminal output, not devtools, first.
 - `SKIP_FILES` in `audit_tenant_coverage.py` (webhooks, blog, contact, ai_parser) are intentionally public/infrastructure — don't try to tenant-scope them.
 - **PDF generation:** Playwright (`sync_playwright`) must run in plain `def` endpoints (not `async def`) so FastAPI executes it in a thread pool; use `wait_until="networkidle"` so Google Fonts load.
