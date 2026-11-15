@@ -1,5 +1,7 @@
 # Tenant assignment problem — stray `slug='none'` / `company_name='None'` rows
 
+> Written for ryzerecruiting_backend before the 2026-11-15 fork.
+
 ## Status
 Observed in production (2026-07-28) — not yet root-caused or fixed.
 

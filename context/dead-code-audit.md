@@ -1,5 +1,7 @@
 # Dead-Code Audit
 
+> Written for ryzerecruiting_backend before the 2026-11-15 fork.
+
 Findings-only inventory. **No files were deleted or modified as part of this audit** — every item below is a candidate for the user to review and act on separately.
 
 Method: `vulture app/ --min-confidence 80`, plus a manual grep pass checking every `app/api/` file against `include_router` calls in `main.py`, and every `app/services/`/`app/models/` file for import references anywhere in `app/` or `alembic/`. False positives (Pydantic fields, SQLAlchemy columns, `Depends()` params, `alembic/env.py` model imports, standalone scripts, the scheduler entry point) were filtered out before anything below was listed as a candidate.
