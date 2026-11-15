@@ -3,7 +3,6 @@
 # Creates a tenant row, a user account, and fires a welcome email in one action.
 
 import logging
-import re
 import secrets
 import string
 from datetime import datetime, timedelta, timezone
@@ -18,6 +17,7 @@ from app.core.security import get_password_hash
 from app.models.tenant import Tenant
 from app.models.user import User, UserType
 from app.services.email import send_welcome_invite_email
+from app.services.tenant_slug import generate_tenant_slug
 
 logger = logging.getLogger(__name__)
 
@@ -45,24 +45,6 @@ class InviteResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def _generate_slug(company_name: str, db: Session) -> str:
-    """
-    Convert company_name to a URL-safe slug.
-    Appends a short random suffix if the slug is already taken.
-    e.g. 'Acme Recruiting' → 'acme_recruiting'
-    """
-    base = re.sub(r"[^a-z0-9]+", "_", company_name.lower()).strip("_")
-    slug = base
-
-    # Check for collision and append suffix if needed
-    attempt = 0
-    while db.query(Tenant).filter(Tenant.slug == slug).first():
-        attempt += 1
-        slug = f"{base}_{attempt}"
-
-    return slug
 
 
 def _generate_temp_password(length: int = 12) -> str:
@@ -106,7 +88,7 @@ def invite_firm(
         )
 
     # 2. Generate slug
-    slug = _generate_slug(payload.company_name, db)
+    slug = generate_tenant_slug(payload.company_name, db)
 
     # 3. Create Tenant
     now = datetime.now(timezone.utc)

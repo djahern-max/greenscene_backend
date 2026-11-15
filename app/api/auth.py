@@ -6,7 +6,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 import httpx
-import re
 import secrets
 import logging
 import redis
@@ -33,6 +32,7 @@ from app.models.tenant import Tenant
 from app.services.branding import get_branding
 from app.services.email import send_self_serve_welcome_email
 from app.services.rate_limit import check_rate_limit, get_client_ip
+from app.services.tenant_slug import generate_tenant_slug
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -85,22 +85,6 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         )
 
 
-def _generate_firm_slug(company_name: str, db: Session) -> str:
-    """
-    Convert company_name to a URL-safe slug, appending a short numeric
-    suffix on collision. Self-contained copy of admin_invite.py's
-    _generate_slug — duplicated rather than shared so the superadmin
-    invite flow stays completely untouched by this change.
-    """
-    base = re.sub(r"[^a-z0-9]+", "_", company_name.lower()).strip("_")
-    slug = base
-    attempt = 0
-    while db.query(Tenant).filter(Tenant.slug == slug).first():
-        attempt += 1
-        slug = f"{base}_{attempt}"
-    return slug
-
-
 @router.post("/signup-firm", response_model=Token, status_code=status.HTTP_201_CREATED)
 def signup_firm(
     payload: SignupFirmRequest, request: Request, db: Session = Depends(get_db)
@@ -135,7 +119,7 @@ def signup_firm(
             detail="Email already registered",
         )
 
-    slug = _generate_firm_slug(payload.company_name, db)
+    slug = generate_tenant_slug(payload.company_name, db)
 
     now = datetime.now(timezone.utc)
     trial_ends = now + timedelta(days=60)
