@@ -12,7 +12,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import get_current_admin_user
+from app.core.deps import RYZE_TENANT, get_current_superuser
 from app.core.security import get_password_hash
 from app.models.tenant import Tenant
 from app.models.user import User, UserType
@@ -64,7 +64,7 @@ def _generate_temp_password(length: int = 12) -> str:
 def invite_firm(
     payload: InviteRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_admin_user),
+    current_user: User = Depends(get_current_superuser),
 ):
     """
     Onboard a new recruiting firm in one action:
@@ -75,8 +75,10 @@ def invite_firm(
       5. Fire branded welcome email via Resend
     """
 
-    # Restrict to RYZE superadmin only
-    if current_user.tenant_id != "ryze":
+    # Restrict to RYZE superadmin only: get_current_superuser requires
+    # is_superuser, and the user must be on the house tenant. A NULL
+    # tenant_id counts as the house tenant, as it does everywhere else.
+    if (current_user.tenant_id or RYZE_TENANT) != RYZE_TENANT:
         raise HTTPException(status_code=403, detail="Not authorized.")
 
     # 1. Check for duplicate email
