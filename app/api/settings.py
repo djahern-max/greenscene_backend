@@ -76,7 +76,7 @@ class TenantBrandingUpdate(BaseModel):
     """
     Fields a firm admin may edit on their own tenant.
 
-    Intentionally EXCLUDED (platform-owned — only RYZE controls these):
+    Intentionally EXCLUDED (platform-owned — only the platform controls these):
       slug, status, trial dates, stripe_*, and the twilio_* credential stubs.
     company_name is also excluded here; renaming the firm is a heavier action
     (it changes the brand_name everywhere) and is better handled deliberately,
@@ -112,8 +112,8 @@ def get_my_tenant_branding(
     """
     Return the current admin's own tenant branding settings.
 
-    NULL fields mean "use the RYZE default for this field" — the UI should
-    show them as empty inputs with the RYZE fallback as placeholder text.
+    NULL fields mean "use the platform default for this field" — the UI should
+    show them as empty inputs with the platform fallback as placeholder text.
     """
     tenant = db.query(Tenant).filter(Tenant.slug == tenant_id).first()
     if not tenant:
@@ -137,7 +137,7 @@ def update_my_tenant_branding(
 
     Uses exclude_unset so a PATCH only touches the fields actually sent —
     omitting a field leaves it unchanged; sending it as "" (empty string) is
-    normalized to NULL, which restores the RYZE fallback for that field.
+    normalized to NULL, which restores the platform fallback for that field.
     """
     tenant = db.query(Tenant).filter(Tenant.slug == tenant_id).first()
     if not tenant:

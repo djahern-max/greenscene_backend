@@ -115,7 +115,7 @@ def get_candidate_matches_for_job(
 
     Candidate names are anonymized as "First L." — contact info is
     never exposed. Employers see enough to understand the pipeline quality
-    and engage RYZE to proceed.
+    and engage the firm to proceed.
 
     Available to: authenticated employer and admin users.
     """
