@@ -1,7 +1,13 @@
-# RYZE.ai Backend — CLAUDE.md
+# Greenscene Backend — CLAUDE.md
 
 ## What this is
-FastAPI backend for RYZE.ai V2 — a multi-tenant ATS for recruiting firms. RYZE Recruiting (accounting/finance recruiting, New England-based) is the first live tenant and proof-of-concept.
+FastAPI backend for Greenscene (greenscene.io) — a multi-tenant recruiting and onboarding tool for green-industry companies (landscaping and similar). Rye Beach Landscaping, LLC is the intended first real tenant. Onboarding (generate a new-hire package, employee signs electronically) is a future module; nothing for it exists yet.
+
+**Origin:** forked 2026-11-15 from `ryzerecruiting_backend` at commit `d3edd13`. Later work in the original repo (tenant restructure parts 1–3, the "Nice ATS" name) is not in this repo and is not the plan here. The original repo and its folder (`/Users/dane/code/ryzerecruiting_backend`) are Dane's preserved fallback — **never modify, commit to, or push from them.**
+
+**The code still says RYZE.** Strings, emails, PDFs and config are un-rebranded; rebranding is a separate queued task. The sections below describe the code as it is today, so they still say RYZE where the code does.
+
+**Tenant model (direction note, no code changed):** in the old product a tenant was a recruiting firm with employer clients and candidates. In Greenscene a tenant is expected to be a company hiring for itself. The data model (`tenants`, `employer_profiles`, `job_orders`, `candidates`) still has the recruiting-firm shape; whether the `employer_profiles` layer survives is an open design question.
 
 ## Stack
 - **Framework:** FastAPI, routers included in `app/main.py`
@@ -9,7 +15,7 @@ FastAPI backend for RYZE.ai V2 — a multi-tenant ATS for recruiting firms. RYZE
 - **Auth:** Bearer token (JWT), `Authorization: Bearer <token>` header — not cookie-based
 - **AI:** Anthropic Claude for generation/chat/briefs; OpenAI `text-embedding-3-small` for embeddings only — never use OpenAI for generation or Claude for embeddings
 - **Integrations:** Zoom API + webhooks (meeting summaries, transcripts), Google Calendar API, Resend (email), Twilio (SMS, A2P 10DLC in progress), Stripe (billing), DigitalOcean Spaces via boto3 (file storage)
-- **Scheduling:** APScheduler as a systemd service
+- **Scheduling:** APScheduler (ran as a systemd service on the old droplet; no service locally)
 
 ## Repo layout
 - `app/api/` — route handlers, one file per resource (`bookings.py`, `candidates.py`, `employer_profiles.py`, `job_orders.py`, `chat.py`, `webhooks.py`, `settings.py`, etc.)
@@ -19,12 +25,33 @@ FastAPI backend for RYZE.ai V2 — a multi-tenant ATS for recruiting firms. RYZE
 - `alembic/` — migrations; `env.py` imports every model explicitly — new models must be added there or Alembic won't detect them
 - `audit_tenant_coverage.py` — static analysis script that walks `app/api/` and flags endpoints missing tenant scoping (SAFE / HARDCODED / REVIEW / PUBLIC / SKIP). Run this after any change touching auth or queries.
 
+## Local development
+Facts verified against this machine on 2026-11-15.
+
+- Repo: `/Users/dane/code/greenscene_backend`. Sibling frontend: `/Users/dane/code/greenscene_frontend`.
+- Virtualenv at `venv/`, built with Homebrew `python3.12`.
+- Postgres is the Homebrew `postgresql@16` service (`postgresql@17` is also installed but in an error state). Local database `greenscene` with the `vector` extension; `alembic current` = `4083c0d3ba12 (head)`.
+- Run with `uvicorn app.main:app --reload --port 8000` (verified running by Dane, 2026-11-15).
+- `scripts/` is gitignored, so `scripts/create_superadmin.py` exists on disk but not on GitHub.
+- Redis is installed via Homebrew and runs as a brew service on `localhost:6379` (hardcoded in `app/api/auth.py` and `app/services/rate_limit.py`). Only OAuth temp storage and the rate limiter for the public signup-firm / demo-request endpoints use it.
+
 ## CRITICAL: multi-tenant isolation
-This is the single most important rule in this codebase. RYZE Recruiting is tenant #1, but the platform is being licensed to other firms, so **every query on tenant-owned data must be scoped by `tenant_id`.**
+This is the single most important rule in this codebase. The platform is multi-tenant, so **every query on tenant-owned data must be scoped by `tenant_id`.**
 
 - Use `get_current_tenant` / `get_current_admin_tenant` or `current_user.tenant_id` — never a hardcoded `RYZE_TENANT` constant for anything but genuinely RYZE-specific defaults.
 - `chat_sessions` and `chat_messages` were previously found unscoped — treat any table without an obvious `tenant_id` filter as suspect until proven otherwise.
 - Run `python audit_tenant_coverage.py` after touching any endpoint and paste me the new `REVIEW`/`HARDCODED` lines rather than assuming a fix worked.
+
+## GUARDRAIL: `ryze` is a functional tenant slug — do not rename it
+The string `ryze` is not just branding. It is a live tenant slug that gates billing, the AI budget, superadmin access and row ownership. **Do not rename, remove, or "clean up" any of the sites below as part of any task unless that task's spec says so in words.** Display-text rebranding and slug changes are different jobs.
+
+Where the slug is functional (files and counts as of the fork):
+- **`RYZE_TENANT = "ryze"` is defined four times:** `app/core/deps.py` (also the billing bypass and the NULL-`tenant_id` fallback), `app/services/branding.py`, `app/models/job_order.py`, `app/models/job_interest.py`.
+- **Budget exemption:** `app/services/usage.py` (`is_over_budget` imports `RYZE_TENANT` from `deps.py`).
+- **22 `or "ryze"` fallbacks:** 11 in `app/api/bookings.py`, 10 in `app/api/job_orders.py`, 1 in `app/api/db_explorer.py`.
+- **Column defaults `default="ryze"`:** `app/models/user.py`, `app/models/employer_profile.py`.
+- **Superadmin gates on `tenant_id == "ryze"`:** `app/api/admin_invite.py`, `app/api/db_explorer.py`.
+- **11 `tenant_id: str = "ryze"` parameter defaults:** `app/services/notifications.py`.
 
 ## Tenant branding — resolver EXISTS, use it
 The per-tenant branding resolver is **implemented** at `app/services/branding.py` — do not re-implement it or go looking for `app/core/tenant_branding.py` (an older doc referenced that path; it never existed).
@@ -36,8 +63,17 @@ The per-tenant branding resolver is **implemented** at `app/services/branding.py
 - **Secret handling:** `tenant.twilio_auth_token` is a credential-column stub for a future per-number model. Do NOT populate it in production until it's encrypted at rest. In the shared-sender model, tenants leave `twilio_*` NULL and ride on RYZE's number.
 - **Resend:** `from_email` must be a Resend-verified domain. Until a firm verifies its own domain, leave its `from_email` NULL — mail sends from RYZE's verified address with the firm's display name and the firm's `reply_to`.
 
-## Deploy & migration workflow — do NOT run these yourself
-Production is a DigitalOcean droplet (167.71.93.90, user `dane`). The actual deploy always happens manually:
+## Deploy & migration workflow — no host yet
+There is no production server. The droplet that hosted `api.ryze.ai` is gone and hosting is TBD. Until a host exists, a task ends at `git push origin main` plus local verification.
+
+These rules hold wherever the app is hosted next:
+- **Always generate migrations locally** (`alembic revision --autogenerate`) and commit them — a server only ever runs `alembic upgrade head`.
+- **Always stop the app before a migration** — open connections hold locks that block `ALTER TABLE`.
+- Prefer `DELETE` over `TRUNCATE` on live tables — `TRUNCATE` needs an `ACCESS EXCLUSIVE` lock, `DELETE` only needs `ROW EXCLUSIVE`.
+- Once a host exists, deploy and migration commands come to Dane as exact commands to run — don't execute them yourself.
+
+### HISTORICAL — old droplet procedure (server no longer exists)
+Kept for reference only; nothing below can be run. Production was a DigitalOcean droplet (167.71.93.90, user `dane`). The deploy always happened manually:
 
 ```
 # local
@@ -50,15 +86,12 @@ alembic upgrade head              # only run migrations on the server, never gen
 sudo systemctl start ryze-api     # or restart
 ```
 
-- **Always generate migrations locally** (`alembic revision --autogenerate`) and commit them — the server only ever runs `alembic upgrade head`.
-- **Always stop `ryze-api` before a migration** — gunicorn connections hold locks that block `ALTER TABLE`.
-- When giving me instructions that touch the server, give me the exact commands to run — don't execute deploy/migration commands yourself.
-- Prefer `DELETE` over `TRUNCATE` on live tables — `TRUNCATE` needs an `ACCESS EXCLUSIVE` lock, `DELETE` only needs `ROW EXCLUSIVE`.
+On that server the service to stop before a migration was `ryze-api` (gunicorn).
 
 ## Conventions
 - **Route ordering matters:** static routes like `/me` must be declared before `/{id}` routes in the same router, or FastAPI treats `me` as a path param.
 - **Resend** only sends from the verified `ryze.ai` domain — `from_email` stays fixed, vary `reply_to` and display name instead (see Tenant branding above).
-- CORS errors in the browser console almost always mean a server-side 500 — check `journalctl -u ryze-api`, not devtools, first.
+- CORS errors in the browser console almost always mean a server-side 500 — check the uvicorn terminal output, not devtools, first.
 - `SKIP_FILES` in `audit_tenant_coverage.py` (webhooks, blog, contact, ai_parser) are intentionally public/infrastructure — don't try to tenant-scope them.
 - **PDF generation:** Playwright (`sync_playwright`) must run in plain `def` endpoints (not `async def`) so FastAPI executes it in a thread pool; use `wait_until="networkidle"` so Google Fonts load.
 
@@ -68,7 +101,7 @@ sudo systemctl start ryze-api     # or restart
 - I prefer **complete drop-in replacement files** for anything that's gotten complex, rather than partial diffs — I'll say so when I want that.
 - Narrow, clearly-scoped surgical edits are fine without asking.
 - Don't invent new abstractions or rename public APIs/endpoints unless I asked for that specifically.
-- A task is not done until its commits are pushed to `origin/main`; a deploy is not verified until the droplet's HEAD matches and the service restarts healthy.
+- A task is not done until its commits are pushed to `origin/main` and its local verification passes. There is no deploy target yet (see "Deploy & migration workflow").
 
 ## Session workflow — context/current-feature.md
 At the start of every session, read `context/current-feature.md` — it holds the active task's Status, Goals, Related Files, and Verification steps. Work from it, don't start unrelated work without checking it first.
