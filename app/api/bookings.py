@@ -232,6 +232,8 @@ def send_recruiter_invite(
             booking_id=booking.id,
             response_token=token,
             notes=payload.notes or "",
+            tenant_id=booking.tenant_id or RYZE_TENANT,
+            db=db,
         )
     except Exception as e:
         logger.error(f"Failed to send recruiter invite notifications: {e}")
@@ -288,6 +290,8 @@ def respond_to_invite(
                 company_name=booking.company_name or "",
                 date=str(booking.date),
                 time_slot=booking.time_slot,
+                tenant_id=booking.tenant_id or RYZE_TENANT,
+                db=db,
             )
         except Exception as e:
             logger.error(f"Failed to send decline notifications: {e}")
@@ -440,6 +444,8 @@ def confirm_invite(
             date=str(booking.date),
             time_slot=booking.time_slot,
             meeting_url=booking.meeting_url,
+            tenant_id=booking.tenant_id or RYZE_TENANT,
+            db=db,
         )
     except Exception as e:
         logger.error(f"Failed to send admin acceptance notification: {e}")
@@ -575,6 +581,8 @@ def update_booking_status(
                     date=str(booking.date),
                     time_slot=booking.time_slot,
                     meeting_url=booking.meeting_url or "",
+                    tenant_id=booking.tenant_id or RYZE_TENANT,
+                    db=db,
                 )
             except Exception as e:
                 logger.error(f"Failed to send candidate confirmed notifications: {e}")
@@ -590,6 +598,8 @@ def update_booking_status(
                     meeting_url=booking.meeting_url or "",
                     notes=booking.notes or "",
                     ai_brief=brief_dict_safe,
+                    tenant_id=booking.tenant_id or RYZE_TENANT,
+                    db=db,
                 )
             except Exception as e:
                 logger.error(f"Failed to send employer confirmed notifications: {e}")
@@ -611,6 +621,8 @@ def update_booking_status(
                 company_name=booking.company_name or "",
                 date=str(booking.date),
                 time_slot=booking.time_slot,
+                tenant_id=booking.tenant_id or RYZE_TENANT,
+                db=db,
             )
         except Exception as e:
             logger.error(f"Failed to send booking cancelled notifications: {e}")
@@ -661,6 +673,8 @@ def create_candidate_booking(
             date=str(payload.date),
             time_slot=payload.time_slot,
             notes=payload.notes or "",
+            tenant_id=booking.tenant_id or RYZE_TENANT,
+            db=db,
         )
     except Exception as e:
         logger.error(f"Failed to send candidate booking notifications: {e}")

@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.deps import RYZE_TENANT
 from app.models.booking import Booking
 from app.services.notifications import notify_reminder
 
@@ -79,6 +80,8 @@ def send_upcoming_reminders() -> None:
                         date=str(booking.date),
                         time_slot=booking.time_slot,
                         meeting_url=booking.meeting_url or "",
+                        tenant_id=booking.tenant_id or RYZE_TENANT,
+                        db=db,
                     )
                     fired += 1
                 except Exception as e:

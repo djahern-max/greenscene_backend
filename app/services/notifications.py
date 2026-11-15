@@ -54,8 +54,9 @@ def notify_booking_received(
     date: str,
     time_slot: str,
     notes: str = "",
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     try:
@@ -99,8 +100,9 @@ def notify_booking_confirmed(
     meeting_url: str,
     notes: str = "",
     ai_brief: dict = None,
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     try:
@@ -141,8 +143,9 @@ def notify_booking_cancelled(
     company_name: str,
     date: str,
     time_slot: str,
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     try:
@@ -179,8 +182,9 @@ def notify_reminder(
     date: str,
     time_slot: str,
     meeting_url: str = "",
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
 
@@ -237,8 +241,9 @@ def notify_recruiter_invite_sent(
     booking_id: int,
     response_token: str,
     notes: str = "",
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     contact_type = "employer" if invite_type == "outbound_employer" else "candidate"
@@ -297,8 +302,9 @@ def notify_invite_accepted(
     time_slot: str,
     meeting_url: str,
     sms_consent: bool = False,
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     contact_type = "employer" if invite_type == "outbound_employer" else "candidate"
@@ -347,8 +353,9 @@ def notify_invite_accepted_admin(
     date: str,
     time_slot: str,
     meeting_url: str,
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     """
     Fires when an outbound invite is accepted by the contact.
@@ -382,8 +389,9 @@ def notify_invite_declined(
     company_name: str,
     date: str,
     time_slot: str,
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     contact_type = "employer" if invite_type == "outbound_employer" else "candidate"
@@ -413,8 +421,9 @@ def notify_candidate_booking_received(
     date: str,
     time_slot: str,
     notes: str = "",
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     try:
@@ -463,8 +472,9 @@ def notify_candidate_confirmed(
     date: str,
     time_slot: str,
     meeting_url: str = "",
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     branding = get_branding(db, tenant_id)
     try:
@@ -502,8 +512,9 @@ def notify_candidate_interest(
     job_title: str,
     job_location: str,
     note: str = "",
-    tenant_id: str = "ryze",
-    db: Session = None,
+    *,
+    tenant_id: str,
+    db: Session,
 ) -> None:
     """Notify the firm's admin inbox that a candidate expressed interest in
     a job order. Email only — SMS is out of scope (Twilio A2P pending)."""
