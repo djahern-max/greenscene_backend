@@ -4,6 +4,101 @@ Completed features/fixes move here from `current-feature.md` once Status = Compl
 
 This file doubles as source material for the Build in Public series — each entry is close to script-ready: what the problem was, what changed, and the dated sequence of how it got fixed.
 
+## Housekeeping after the fork — CLAUDE.md and context/ tell the truth about this repo (completed 2026-11-15)
+Docs-only task, backend repo only: no file under `app/`, `alembic/`, `tests/` or
+`scripts/` changed, and no code, string, email, PDF or config was rebranded. On
+2026-11-15 this repo was created as a copy of `ryzerecruiting_backend` at commit
+`d3edd13` and pushed to `github.com/djahern-max/greenscene_backend`; the original
+repo and its folder (`/Users/dane/code/ryzerecruiting_backend`) are Dane's
+preserved fallback and are never modified from here. The later November work in
+the original (tenant restructure parts 1–3, the "Nice ATS" name) is not in this
+repo and is not the plan. Product direction (Dane, 2026-11-15): the name on
+screen is **Greenscene**, domain **greenscene.io** — a multi-tenant recruiting
+**and onboarding** tool for green-industry companies, with Rye Beach
+Landscaping, LLC as the intended first real tenant; onboarding is a future
+module. The docs copied from the old repo were wrong in ways that would mislead
+every future session. Done meant: `CLAUDE.md` title and "What this is" describe
+this repo, its origin and the never-touch-the-original rule; the Deploy section
+no longer claims a live server (the droplet 167.71.93.90 is gone, hosting TBD, a
+task ends at `git push origin main` plus local verification); every other
+droplet-dependent sentence is corrected; a "Local development" section states
+facts verified against the machine; an explicit guardrail records that `ryze` is
+a functional tenant slug; no stale repo names remain in `CLAUDE.md` or
+`context/session-opener.md`; and the diff touches only `CLAUDE.md` and
+`context/`.
+
+**Decisions taken 2026-11-15.** 1 → (a): keep the old deploy procedure under a
+heading marked HISTORICAL, with the host-independent migration rules (generate
+locally, stop the app before `ALTER TABLE`, prefer `DELETE` over `TRUNCATE`)
+lifted out as live rules above it. 2 → (a): state the new direction and record
+"tenant = a company hiring for itself; the `employer_profiles` layer is an open
+design question" as a note, changing no code; the multi-tenant-isolation
+sentence softened to "the platform is multi-tenant". 3 → (b): a one-line header
+on `context/tenant-assignment-problem.md` and `context/dead-code-audit.md` —
+"Written for ryzerecruiting_backend before the 2026-11-15 fork." — without the
+proposed "line numbers still valid at d3edd13" clause, which was never checked.
+
+**Two spec facts corrected by the audit.** First, "Redis is not installed" was
+false on this machine: Homebrew Redis 8.10.3 is installed and running as a brew
+service on `localhost:6379` (hardcoded in `app/api/auth.py` and
+`app/services/rate_limit.py`); `CLAUDE.md` records that instead. Second, the
+`ryze` slug is functional in more places than the spec listed, so the guardrail
+names them all by file and count (no line numbers, so it does not go stale):
+`RYZE_TENANT` defined four times (`app/core/deps.py`, `app/services/branding.py`,
+`app/models/job_order.py`, `app/models/job_interest.py`); the budget exemption
+in `app/services/usage.py`; 22 `or "ryze"` fallbacks (11 `bookings.py`, 10
+`job_orders.py`, 1 `db_explorer.py`); `default="ryze"` columns in
+`app/models/user.py` and `app/models/employer_profile.py`; superadmin gates in
+`app/api/admin_invite.py` and `app/api/db_explorer.py`; 11 parameter defaults in
+`app/services/notifications.py`. Also added beyond the spec, with Dane's
+approval: the APScheduler stack line (systemd on the old droplet, no service
+locally), a Postgres line (`postgresql@16` brew service; `postgresql@17`
+installed but in an error state), and a closing line in the HISTORICAL block
+naming `ryze-api` (gunicorn) as the service that was stopped before migrations.
+
+**One verification check was contradictory and accepted as-is.** The spec's
+`grep -rn "ryzerecruiting_" CLAUDE.md context/session-opener.md` → no output
+cannot hold alongside Done-means 1, which requires the Origin sentence to name
+`ryzerecruiting_backend`. The grep returns one hit, `CLAUDE.md` line 6 (the
+Origin / never-touch-the-original sentence); Dane accepted it as intended.
+`context/session-opener.md` has no hits and needed no edit.
+
+**Recorded leftovers, not done here:** `.env.example` still shows
+`ryzerecruiting` as the example database name and ryzerecruiting.com URLs —
+configuration, left for the rebrand task; the Tenant-branding section of
+`CLAUDE.md` still says RYZE where the code does. Queued next: the same
+housekeeping for `greenscene_frontend`; a backend rebrand audit classifying
+every `ryze` occurrence as display text / configuration / tenant slug (findings
+only); the narrow rebrand itself; the onboarding module.
+
+History:
+- 2026-11-15 — Task drafted (Claude, chat) from a read-only inspection of
+  `greenscene_backend` at `d3edd13`. No code changed.
+- 2026-11-15 — Audit presented (Claude Code). Found the spec's "Redis is not
+  installed" fact false on this machine (Homebrew Redis 8.10.3 running as a brew
+  service) and the `ryze` slug functional in more sites than the spec listed.
+  Dane confirmed: Decision 1 (a), Decision 2 (a) incl. softening the
+  multi-tenant sentence, Decision 3 (b) without the line-numbers clause;
+  corrected Redis wording; include APScheduler line and Postgres 16 line;
+  uvicorn command recorded as verified by Dane.
+- 2026-11-15 — `CLAUDE.md` rewritten for the fork: title / What this is / origin
+  / tenant-direction note, Local development section, `ryze` slug guardrail
+  (files and counts, no line numbers), Deploy section split into live rules +
+  HISTORICAL droplet procedure, journalctl tip and droplet-HEAD clause
+  corrected, APScheduler line. One-line pre-fork header added to
+  `context/tenant-assignment-problem.md` and `context/dead-code-audit.md`.
+  `context/session-opener.md` needed no change. Verification: `alembic current`
+  = `4083c0d3ba12 (head)`; IP appears only in the HISTORICAL block, `journalctl`
+  nowhere; diff touches only `CLAUDE.md` and `context/`. Known leftover for the
+  rebrand task: `.env.example` (ryzerecruiting DB name and URLs). Commits
+  `8fd5506`, `33e6be2`, `bae6cb8` pushed to `origin/main`.
+- 2026-11-15 — Dane accepted the `CLAUDE.md` line 6 grep hit as intended (the
+  spec's grep check contradicted Done-means 1) and the added `ryze-api`
+  (gunicorn) line in the HISTORICAL block; that Verification box ticked on that
+  basis. All Verification boxes checked.
+- 2026-11-15 — Confirmed complete by Dane. Archived; `current-feature.md` reset
+  to the blank template (no next task loaded).
+
 ## Local dev environment — backend running on this machine (completed 2026-11-05)
 First step of the greenscene.io revival: get the FastAPI backend running locally
 from a fresh clone, with a working database and a superadmin login, so feature
