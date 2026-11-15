@@ -27,7 +27,7 @@ from app.api.billing import router as billing_router
 from app.api.settings import router as settings_router
 from app.api.demo_request import router as demo_request_router
 
-app = FastAPI(title="RYZE.ai API")
+app = FastAPI(title="Greenscene API")
 
 app.add_middleware(
     SessionMiddleware,

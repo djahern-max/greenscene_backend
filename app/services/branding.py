@@ -37,7 +37,7 @@ RYZE_TENANT = "ryze"
 @dataclass(frozen=True)
 class TenantBranding:
     tenant_id: str
-    brand_name: str  # display name: "RYZE.ai" or "Acme Recruiting"
+    brand_name: str  # display name: "Greenscene" or "Acme Recruiting"
     signature_name: str  # who signs emails: "Dane"
     from_email: str  # Resend-verified sender address
     reply_to_email: str  # where replies land
@@ -64,7 +64,7 @@ class TenantBranding:
 def _ryze_defaults(tenant_id: str) -> TenantBranding:
     return TenantBranding(
         tenant_id=tenant_id,
-        brand_name="RYZE.ai",
+        brand_name="Greenscene",
         signature_name="Dane",
         from_email=settings.FROM_EMAIL,
         reply_to_email=settings.REPLY_TO_EMAIL or settings.FROM_EMAIL,

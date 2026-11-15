@@ -917,6 +917,6 @@ def download_candidate_pdf(
         io.BytesIO(pdf_bytes),
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="{safe_name}_RYZE_Profile.pdf"'
+            "Content-Disposition": f'attachment; filename="{safe_name}_Greenscene_Profile.pdf"'
         },
     )

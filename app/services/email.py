@@ -1370,15 +1370,15 @@ def send_welcome_invite_email(
 
     resend.Emails.send(
         {
-            "from": f"RYZE.ai <{settings.FROM_EMAIL}>",
+            "from": f"Greenscene <{settings.FROM_EMAIL}>",
             "to": [email],
-            "subject": "You're invited to RYZE.ai — your 60-day trial starts today",
+            "subject": "You're invited to Greenscene — your 60-day trial starts today",
             "html": f"""
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f9fafb;border-radius:8px;">
-            <h1 style="color:#0a66c2;margin-bottom:8px;">RYZE.ai</h1>
+            <h1 style="color:#0a66c2;margin-bottom:8px;">Greenscene</h1>
             <hr style="border:none;border-top:1px solid #e2e8f0;margin-bottom:24px;" />
 
-            <h2 style="color:#111827;margin-bottom:4px;">Welcome to RYZE.ai, {full_name}! 🎉</h2>
+            <h2 style="color:#111827;margin-bottom:4px;">Welcome to Greenscene, {full_name}! 🎉</h2>
             <p style="color:#64748b;font-size:14px;margin-top:0;">
                 Your 60-day free trial for <strong>{company_name}</strong> starts now.
             </p>
@@ -1416,7 +1416,7 @@ def send_welcome_invite_email(
                 <a href="{settings.FRONTEND_URL}/auth"
                    style="background:#0a66c2;color:#ffffff;padding:14px 32px;border-radius:6px;
                           text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
-                    Log In to RYZE.ai →
+                    Log In to Greenscene →
                 </a>
             </div>
 
@@ -1428,7 +1428,7 @@ def send_welcome_invite_email(
             <hr style="border:none;border-top:1px solid #e2e8f0;margin-top:32px;" />
             <p style="color:#94a3b8;font-size:12px;text-align:center;">
                 © 2026 RYZE GROUP, Inc. · Manchester, NH<br />
-                You received this email because you were invited to RYZE.ai.
+                You received this email because you were invited to Greenscene.
             </p>
         </div>
         """,
@@ -1445,23 +1445,23 @@ def send_self_serve_welcome_email(
 ) -> None:
     """
     Welcome email for a self-serve signup — no temp password (the user
-    chose their own at signup). Hardcoded to RYZE branding intentionally:
-    this onboards a new firm onto RYZE.ai itself, not a tenant emailing
+    chose their own at signup). Hardcoded to platform branding intentionally:
+    this onboards a new firm onto Greenscene itself, not a tenant emailing
     its own contacts, so there's no tenant brand to resolve yet.
     """
     trial_end_str = trial_ends_at.strftime("%B %d, %Y")
 
     resend.Emails.send(
         {
-            "from": f"RYZE.ai <{settings.FROM_EMAIL}>",
+            "from": f"Greenscene <{settings.FROM_EMAIL}>",
             "to": [email],
-            "subject": "Welcome to RYZE.ai — your 60-day trial starts today",
+            "subject": "Welcome to Greenscene — your 60-day trial starts today",
             "html": f"""
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#f9fafb;border-radius:8px;">
-            <h1 style="color:#0a66c2;margin-bottom:8px;">RYZE.ai</h1>
+            <h1 style="color:#0a66c2;margin-bottom:8px;">Greenscene</h1>
             <hr style="border:none;border-top:1px solid #e2e8f0;margin-bottom:24px;" />
 
-            <h2 style="color:#111827;margin-bottom:4px;">Welcome to RYZE.ai, {full_name}! 🎉</h2>
+            <h2 style="color:#111827;margin-bottom:4px;">Welcome to Greenscene, {full_name}! 🎉</h2>
             <p style="color:#64748b;font-size:14px;margin-top:0;">
                 Your 60-day free trial for <strong>{company_name}</strong> starts now.
             </p>
@@ -1494,7 +1494,7 @@ def send_self_serve_welcome_email(
                 <a href="{settings.FRONTEND_URL}/auth"
                    style="background:#0a66c2;color:#ffffff;padding:14px 32px;border-radius:6px;
                           text-decoration:none;font-size:15px;font-weight:600;display:inline-block;">
-                    Log In to RYZE.ai →
+                    Log In to Greenscene →
                 </a>
             </div>
 
@@ -1505,7 +1505,7 @@ def send_self_serve_welcome_email(
             <hr style="border:none;border-top:1px solid #e2e8f0;margin-top:32px;" />
             <p style="color:#94a3b8;font-size:12px;text-align:center;">
                 © 2026 RYZE GROUP, Inc. · Manchester, NH<br />
-                You received this email because you signed up for RYZE.ai.
+                You received this email because you signed up for Greenscene.
             </p>
         </div>
         """,
