@@ -4,6 +4,168 @@ Completed features/fixes move here from `current-feature.md` once Status = Compl
 
 This file doubles as source material for the Build in Public series — each entry is close to script-ready: what the problem was, what changed, and the dated sequence of how it got fixed.
 
+## Narrow rebrand (backend) — "Greenscene" on screen, greenscene.io in config; the `ryze` slug and the SMS-consent sentence stay (completed 2026-11-15)
+Backend repo only. Scope came from `context/rebrand-audit.md`, "Proposed scope
+for the narrow rebrand", lists 1 and 2: rename what a person reads and move the
+sender and links off domains Dane no longer controls. Not in scope and not
+touched: everything in audit Section A (the `ryze` slug — this spec authorised
+no GUARDRAIL site), the legal entity "RYZE GROUP, Inc.", the SMS-consent
+sentence, the AI-prompt framing (audit C.1), seed scripts, fixture addresses,
+applied migrations, internal names, `greenscene_frontend` and both original
+folders. Done meant: (1) the resolver's default brand name is `"Greenscene"`;
+(2) the two platform welcome emails, the FastAPI title and `APP_NAME` say
+Greenscene; (3) the public booking pages, Zoom topic, calendar title and PDF
+filename get a plain rename (routing them through `get_branding` is a separate
+queued task); (4) `FROM_EMAIL` defaults to `hello@greenscene.io`, the CORS list
+holds no old origin, hardcoded links use `settings.FRONTEND_URL`; (5)
+`.env.example` and comment examples follow; (6) everything left as RYZE is
+listed with its reason; (7) one new test pins the default name and that the
+slug still resolves; (8) Dane gets the list of things only he can do.
+
+**Decisions (Dane, 2026-11-15).** Fixed before the task: the name is
+"Greenscene" (that spelling), the domain greenscene.io, the sender
+`hello@greenscene.io`; Twilio registration and the slug are left alone.
+Decision 1 — **(c)**: on the public SMS-consent page the title and wordmark
+say Greenscene and the privacy link points at `{FRONTEND_URL}/privacy`; the
+consent sentence naming "RYZE GROUP, Inc. (RYZE.ai)" is unchanged. Decision 2 —
+CORS is `https://greenscene.io`, `https://www.greenscene.io` and the two
+localhost entries; an API origin does not belong in the list. Decision 3 —
+platform emails send as `Greenscene <hello@greenscene.io>`; a tenant with a
+company name and no sender of its own sends as
+`<company name> <hello@greenscene.io>`. Decision 4 — **(b)**: the public
+confirmation line reads "Your call is set for …" and no longer names a person.
+**SMS wording change — accepted**: found in the audit-first step, changing the
+default brand name also changes the eight SMS bodies ("Your call with
+Greenscene is confirmed…"), which send from the number registered to RYZE
+GROUP. Also decided: comments that call the house tenant "RYZE" stay and are
+reported; the cancellation email's link text reads "our website".
+
+**Domains and config — commits `59e452e`, `b4aad93`.** `FROM_EMAIL` default
+`dane@ryze.ai` → `hello@greenscene.io` (`app/core/config.py`). CORS: the five
+`ryze.ai` / `ryzerecruiting.com` origins removed, the two greenscene.io origins
+added (`app/main.py`). The login link and button in both welcome emails, the
+decline-page button and the consent-page privacy link use
+`settings.FRONTEND_URL`. `.env.example`: example database name `greenscene`,
+greenscene.io in the commented production URLs and OAuth redirect examples.
+
+**Display text — commits `954a34f`, `2f899da`.** `brand_name="Greenscene"` in
+`app/services/branding.py` — one line that changes every resolved surface:
+all tenant-branded emails, the eight SMS bodies, the three PDF footers, the
+chat and pre-call-brief prompts' firm name, the logged-call Zoom topic and
+`tenant_brand_name` in the login and `/me` responses. Plain renames: both
+platform welcome emails (from-name, subject, wordmark, greeting, button,
+reason-for-email line), the public response and consent pages, two Zoom
+topics, the calendar title, the PDF download filename
+(`…_Greenscene_Profile.pdf`), the FastAPI title and `APP_NAME`
+("Greenscene API"). Added by Dane after the first report: the five docstring
+lines FastAPI publishes on `/docs` say "the platform" or "the firm".
+
+**Test — commit `61d3ac6`.** `tests/test_branding_default.py`, 6 cases: the
+default brand name is "Greenscene"; `get_branding(None, "ryze")` still
+resolves with `tenant_id == "ryze"`; a NULL tenant falls back to the slug; the
+default from-line starts `Greenscene <`. No existing test asserted the old
+brand string, so none changed.
+
+**Verification.** `pytest -m "not semantic"`: baseline 3 failed, 46 passed;
+after 3 failed, 52 passed — the same three failures in
+`tests/test_tenant_isolation.py`, no new ones. `python
+audit_tenant_coverage.py`: identical to the baseline (76 Safe, 19 Public/Skip,
+0 Hardcoded, 0 Needs review). `git grep "ryze\.ai\|ryzerecruiting\.com" -- app
+.env.example` → no hits. Section A: the full diff from `bb42bf9` was grepped
+for `"ryze"`, `RYZE_TENANT` and `_ryze_defaults` — no changed line contains
+any. App started on a spare port; `GET /docs` → 200, title "Greenscene API";
+the generated OpenAPI schema contains no "ryze" in any casing. Both public
+page functions were rendered directly to check the title, wordmark, unchanged
+consent sentence and the new privacy link. One concern per commit; all pushed
+to `origin/main`.
+
+**Still says RYZE in `app/`, by design — 178 lines.** 139 are the slug and
+internal names (`"ryze"`, `RYZE_TENANT`, `_ryze_defaults`). 3 are the legal
+entity and the consent sentence (`app/api/bookings.py:817`,
+`app/services/email.py:1430, 1507`). 36 are code comments, unpublished
+docstrings and one log line (`scheduler_runner.py:24`) that refer to the house
+tenant, plus the old bucket host in a comment at `app/services/spaces.py:40`.
+Outside `app/`: seed scripts, `manual_test_tenant_isolation.py`,
+`seed_cleanup.py`, `scripts/create_superadmin.py`, test fixtures and applied
+migrations.
+
+**Docs — commit `6bd1887`.** `CLAUDE.md`: "The code still says RYZE" replaced
+by what now says Greenscene and what still says RYZE on purpose; the resolver
+bullet says "platform defaults"; both Resend lines name `hello@greenscene.io`
+and say nothing sends until greenscene.io is verified.
+`context/rebrand-audit.md`: one dated line under the header naming the
+categories acted on; tables not rewritten.
+
+**Only Dane can do.** Check `FROM_EMAIL`, `FRONTEND_URL`, `BACKEND_URL` and
+`REPLY_TO_EMAIL` in the local `.env` (not opened by Claude Code; a value there
+overrides the new default). Verify greenscene.io as a sending domain in Resend
+— no email sends until then. The frontend must serve `/privacy` wherever it is
+hosted. At hosting time: Google and LinkedIn OAuth redirect URIs, Stripe
+webhook destination, Zoom webhook endpoint, DNS.
+
+**Follow-ups, not done here.** The from-line does not quote the display name;
+a company name with a comma may be parsed as two addresses — test before the
+first tenant sends. SMS bodies carry the tenant or platform name but send from
+one registered number; the Twilio registration needs reviewing before any
+tenant texts. Still queued, each its own task: the frontend narrow rebrand;
+routing the public booking pages, Zoom topic and calendar title through
+`get_branding`; moving the CORS list to a setting once a host is known; the
+seven `CLAUDE.md` corrections; the three baseline failures in
+`tests/test_tenant_isolation.py`; the unmatched-signup bucket; the possible
+billing-check gap; the AI-prompt framing; then the onboarding module.
+
+History:
+- 2026-11-15 — Task drafted (Claude, chat) from `context/rebrand-audit.md` and
+  a read-only look at `greenscene_backend` at `bb42bf9`. No code changed.
+- 2026-11-15 — Baseline at `bb42bf9`, before any edit. `pytest -m "not
+  semantic"`: 3 failed, 46 passed, 3 skipped, 3 deselected — the failures are
+  the expected three in `tests/test_tenant_isolation.py`
+  (`test_owning_tenant_sees_its_calls_by_date`,
+  `test_owning_tenant_finds_candidate_calls`,
+  `test_candidate_tool_boundary_excludes_employer_contacts`).
+  `python audit_tenant_coverage.py`: 95 endpoints, 76 Safe, 19 Public/Skip,
+  0 Hardcoded, 0 Needs review. Audit presented to Dane; no code changed.
+- 2026-11-15 — Dane confirmed: Decision 2 (four-origin CORS list), Decision 3,
+  Decision 4 (b); house-tenant comments left and reported; two comment fixes
+  in site 5 made; `email.py` cancellation link text reads "our website".
+- 2026-11-15 — Follow-ups recorded at Dane's direction, not part of this task:
+  - The from-line does not quote the display name; a company name with a
+    comma may be parsed as two addresses. Test before the first tenant sends.
+  - SMS bodies carry the tenant or platform name but send from one registered
+    number; the Twilio registration needs reviewing before any tenant texts.
+- 2026-11-15 — Domains and config committed (`59e452e`): `FROM_EMAIL` default,
+  CORS list, `FRONTEND_URL` links, `.env.example`.
+- 2026-11-15 — Dane answered the two open items: Decision 1 (c); SMS wording
+  change accepted.
+- 2026-11-15 — Display text committed (`954a34f`): resolver default, welcome
+  emails, public booking and consent pages (title and wordmark), Zoom topic,
+  calendar title, PDF filename, FastAPI title, `APP_NAME`. Consent-page
+  privacy link → `{FRONTEND_URL}/privacy` (`b4aad93`). New test
+  `tests/test_branding_default.py` (`61d3ac6`).
+- 2026-11-15 — Verification: `pytest -m "not semantic"` 3 failed (the same
+  three), 52 passed, 3 skipped; `audit_tenant_coverage.py` output identical
+  to baseline; `git grep "ryze\.ai\|ryzerecruiting\.com" -- app .env.example`
+  → no hits; no changed line contains `"ryze"`, `RYZE_TENANT` or
+  `_ryze_defaults`; app started on port 8765, `GET /docs` → 200, title
+  "Greenscene API". 183 `ryze` lines remain in `app/`: 139 slug / internal
+  names, 3 legal entity / consent sentence, 41 comments, docstrings and one
+  log line that refer to the house tenant.
+- 2026-11-15 — Dane approved the four `CLAUDE.md` edits and added one item:
+  the five docstring lines FastAPI publishes on `/docs`
+  (`app/api/job_orders.py:118`, four in `app/api/settings.py`) say "the
+  platform" or "the firm" (`2f899da`). Code comments, the scheduler log line
+  and `spaces.py:40` left. Re-checked: no changed line touches Section A;
+  `pytest -m "not semantic"` 3 failed (the same three), 52 passed, 3 skipped;
+  the generated OpenAPI schema contains no "ryze" in any casing. 178 `ryze`
+  lines remain in `app/`: 139 slug / internal names, 3 legal entity / consent
+  sentence, 36 comments, docstrings and one log line.
+- 2026-11-15 — Docs committed: `CLAUDE.md` (four edits), one dated line in
+  `context/rebrand-audit.md`, this History.
+- 2026-11-15 — Docs pushed to `origin/main` (`6bd1887`). Dane confirmed the
+  task done, with his two choices recorded: Decision 1 (c) and the SMS wording
+  change accepted. Archived to `context/CHANGELOG.md`; `current-feature.md`
+  reset to the blank template. No new task started.
+
 ## Live bugs from the rebrand audit closed — reserved `ryze` slug at signup; every notification carries its tenant; invite gate (completed 2026-11-15)
 Backend repo only. Narrow patches for the three live bugs recorded in
 `context/rebrand-audit.md` ("Live bugs found", items 1–3) — not a redo of the
