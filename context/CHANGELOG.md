@@ -4,6 +4,106 @@ Completed features/fixes move here from `current-feature.md` once Status = Compl
 
 This file doubles as source material for the Build in Public series — each entry is close to script-ready: what the problem was, what changed, and the dated sequence of how it got fixed.
 
+## Backend rebrand audit — every `ryze` occurrence classified, findings only (completed 2026-11-15)
+Findings-only task, backend repo only. The single deliverable is
+`context/rebrand-audit.md`; no file under `app/`, `alembic/`, `tests/` or
+`scripts/`, no root-level script, no `.env*` file and not `CLAUDE.md` changed,
+and nothing was renamed. `greenscene_frontend` and both original folders were
+not touched. The name on screen is becoming **Greenscene** (greenscene.io);
+before any rename Dane needed an inventory that separates harmless display text
+from configuration and from the functional tenant slug. The audit mirrors the
+structure, six categories and table columns of
+`greenscene_frontend/context/rebrand-audit.md` so the two read side by side.
+Done meant: the file states its date, scope and exact commands; every
+case-insensitive `ryze` hit is listed with file, line, matching text and what
+breaks or changes if renamed; each hit sits in exactly one of A TENANT-SLUG,
+B BRANDING-RESOLVED, C BRANDING-HARDCODED, D DOMAIN-URL, E INTERNAL-ID, F DOCS;
+Section A answers which endpoints and background jobs behave differently for a
+tenant whose slug is not `ryze`; Section D separates in-code values, `.env`
+defaults and outside services; AI prompts get their own sub-table; Counts and
+multi-category sections; and a closing "Proposed scope for the narrow rebrand"
+that proposes and stops.
+
+**Result.** 543 matching lines in 56 files, all tracked, no filename hits:
+A 201, B 1, C 29, D 34, E 177, F 101. A scripted check confirmed all 442
+line-numbered rows have a hit at the stated line, and all 46 sites named in
+`CLAUDE.md`'s GUARDRAIL section appear in Section A. Database evidence came
+from read-only `SELECT`s on the local `greenscene` database: no `tenant_id`
+column has a server-side default, the only row carrying the slug is the
+superadmin in `users`, and `tenants` is empty. `.env` was never opened.
+
+**What the audit established.** The slug never reaches a customer as text — it
+is not put into any URL, email, SMS, PDF or page, and leaves the server only as
+the `tenant_id` field of API JSON, a PostHog property and Stripe metadata. One
+line, `brand_name="RYZE.ai"` at `app/services/branding.py:67`, sets the name on
+every surface that uses the resolver, so the slug can stay as it is. Hardcoded
+display text is 29 lines, mostly the public booking-response pages in
+`app/api/bookings.py` and the two platform welcome emails in
+`app/services/email.py`. Category D is what must change before any deploy: the
+CORS list in `app/main.py`, the `FROM_EMAIL` default, six hardcoded links to
+the old domains, and the OAuth, Stripe and Zoom settings held in outside
+services. No AI prompt contains the word; the remaining recruiting-firm framing
+is quoted in sub-table C.1 and kept out of the count.
+
+**Added at Dane's request during the audit-first step:** a "visible to an end
+user?" column in Section A, and a "CLAUDE.md corrections needed" section in the
+audit in place of any `CLAUDE.md` edit (seven items, including the stale
+PDF-footer line, the incomplete GUARDRAIL list, and the wrong statement that
+`scripts/create_superadmin.py` is not on GitHub).
+
+**Live bugs found, recorded, not fixed.** Work stopped before the file was
+written, per the task's rule, and Dane chose "record and continue". (1) High:
+public `POST /api/auth/signup-firm` can claim the platform slug, because the
+slug generator only checks the `tenants` table and the platform slug has no row
+there; the new admin would get the billing bypass, the AI-budget exemption,
+invite rights and the platform tenant's rows. (2) High once a second tenant
+exists: 8 of the 11 `notify_*` call sites (seven in `app/api/bookings.py`, plus
+the every-minute reminder job in `app/services/scheduler.py`) omit `tenant_id`
+and `db`, so another tenant's messages go out under the default brand and
+sender and the admin copy goes to the platform inbox. (3) Low: the invite gate
+at `app/api/admin_invite.py:97` requires an admin, not a superuser, despite its
+comment, and does not treat a NULL `tenant_id` as the platform slug. Current
+exposure is nil: no production host, empty `tenants`, one user.
+
+**Two figures corrected along the way.** The plan's raw count of 548
+double-counted the 5 lines of `scripts/create_superadmin.py`, which is tracked
+despite the `scripts/` ignore rule; the correct total is 543. And the first bug
+report said bug 1 exposed NULL-`tenant_id` rows; it does not, since queries
+filter on equality with the slug.
+
+**Recorded leads and leftovers, not done here:** only 5 endpoint dependencies
+run the trial/subscription check while 39 places derive the tenant inline and
+skip it (from a grep, not an endpoint-by-endpoint trace); the "Session
+workflow" section of `CLAUDE.md` names sections the blank template no longer
+uses (both repos); frontend `README.md` is still Vite starter text. The audit's
+category F counts for `context/CHANGELOG.md` and `context/current-feature.md`
+are as of commit `6434b11` and are changed by this archive. Queued next: fixes
+for the three bugs as their own tasks, the `CLAUDE.md` corrections, the narrow
+rebrand itself (both repos, scoped from the two audits), then the onboarding
+module.
+
+History:
+- 2026-11-15 — Task drafted (Claude, chat) from a read-only inspection of
+  `greenscene_backend` at `aca0b4e`. No code changed.
+- 2026-11-15 — Audit-first step: ran the three search commands, presented the
+  raw count, category definitions and plan. Dane confirmed, adding a
+  "visible to an end user?" column to Section A and a "CLAUDE.md corrections
+  needed" section (no `CLAUDE.md` edit).
+- 2026-11-15 — Stopped before writing, per the Decisions rule: found two live
+  bugs (public firm signup can claim the platform slug; 8 of 11 `notify_*`
+  call sites omit `tenant_id`/`db`) and a lower-severity invite-gate
+  inconsistency. Dane chose "record and continue"; fixes are separate tasks
+  after this one is archived.
+- 2026-11-15 — Wrote `context/rebrand-audit.md`. Raw count 543 lines in 56
+  files, all tracked (`scripts/create_superadmin.py` turned out to be tracked,
+  so its 5 lines are not added separately; the plan's 548 double-counted
+  them). Categories: A 201, B 1, C 29, D 34, E 177, F 101 = 543. Scripted
+  check: 442 of 442 line-numbered rows resolve. All 46 GUARDRAIL sites are in
+  Section A. Read-only SELECTs on the local database only; `.env` not opened.
+  Commit `6434b11` pushed to `origin/main`.
+- 2026-11-15 — Confirmed complete by Dane. Archived; `current-feature.md` reset
+  to the blank template (no next task loaded).
+
 ## Housekeeping after the fork — CLAUDE.md and context/ tell the truth about this repo (completed 2026-11-15)
 Docs-only task, backend repo only: no file under `app/`, `alembic/`, `tests/` or
 `scripts/` changed, and no code, string, email, PDF or config was rebranded. On
