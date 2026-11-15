@@ -1,5 +1,7 @@
 # Rebrand Audit — "ryze" occurrences (Backend)
 
+> **Line numbers are as of commit `6434b11`.** The live-bugs fix task (commits `b896344`, `fb1fb01`, `52dca4e`, 2026-11-15) moved some lines in `app/api/auth.py`, `app/api/admin_invite.py`, `app/api/bookings.py`, `app/services/notifications.py` and `app/services/scheduler.py`, and fixed live bugs 1–3 below. The tables have not been re-numbered.
+
 Date: 2026-11-15
 Repo: `greenscene_backend`, working tree at commit `aca0b4e` plus this task's edit to `context/current-feature.md`.
 Scope: findings only. No file under `app/`, `alembic/`, `tests/`, `scripts/`, no root-level script, no `.env*` file and not `CLAUDE.md` was changed. Nothing was renamed. `greenscene_frontend` and both original folders were not touched.
