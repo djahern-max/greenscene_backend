@@ -816,7 +816,7 @@ def _consent_form_page(booking) -> str:
         <span>I agree to receive SMS appointment reminders and booking notifications from
         RYZE GROUP, Inc. (RYZE.ai). Message frequency varies. Message and data rates may apply.
         Reply STOP to opt out.
-        <a href="https://ryze.ai/privacy" target="_blank" style="color:#0a66c2;">Privacy Policy</a></span>
+        <a href="{settings.FRONTEND_URL}/privacy" target="_blank" style="color:#0a66c2;">Privacy Policy</a></span>
       </label>
       <button type="submit"
               style="margin-top:24px;width:100%;padding:14px;font-size:16px;font-weight:700;color:#fff;
