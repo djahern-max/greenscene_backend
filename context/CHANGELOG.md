@@ -4,6 +4,160 @@ Completed features/fixes move here from `current-feature.md` once Status = Compl
 
 This file doubles as source material for the Build in Public series — each entry is close to script-ready: what the problem was, what changed, and the dated sequence of how it got fixed.
 
+## Live bugs from the rebrand audit closed — reserved `ryze` slug at signup; every notification carries its tenant; invite gate (completed 2026-11-15)
+Backend repo only. Narrow patches for the three live bugs recorded in
+`context/rebrand-audit.md` ("Live bugs found", items 1–3) — not a redo of the
+November restructure from the original repo. No rebranding, no slug rename, no
+tenant restructure, no change to what the `ryze` tenant is; `greenscene_frontend`
+and both original folders were not touched. The task spec authorised, in words,
+changes to exactly two GUARDRAIL sites: the `tenant_id: str = "ryze"` parameter
+defaults in `app/services/notifications.py` and the invite gate in
+`app/api/admin_invite.py`. Done meant: (1–2) neither `POST /api/auth/signup-firm`
+nor the invite flow can produce a tenant or user whose slug is `ryze`, for any
+casing, punctuation or whitespace; (3) a slug in use by any `users.tenant_id`
+counts as taken even with no `tenants` row; (4) tests prove 1–3; (5) the eight
+broken `notify_*` call sites pass the booking's own tenant and a `db` session;
+(6) a `notify_*` function can no longer be called without saying which tenant
+it is for; (7) a static test fails on any `notify_*(` call under `app/` that
+omits `tenant_id` or `db`; (8) the invite gate handled per Decision 5.
+
+**Decisions (Dane, 2026-11-15).** 1a — a reserved or taken slug gets a numeric
+suffix, like any collision; no new error path, frontend unchanged. 2a — one
+shared helper, the duplicated generator removed; reserved list `ryze`,
+`greenscene`, `admin`, `api`, `platform`. 3a — the `= "ryze"` / `= None`
+defaults removed; `tenant_id` and `db` are required keyword-only arguments.
+4a — a booking with a NULL `tenant_id` is coalesced at the call site
+(`booking.tenant_id or RYZE_TENANT`); the column is nullable and no local row
+is NULL. 5a — the invite endpoint requires `is_superuser` and treats a NULL
+`tenant_id` as the house tenant, as its own commit.
+
+**Bug 1 — commit `b896344`.** New `app/services/tenant_slug.py`
+(`generate_tenant_slug`, `RESERVED_SLUGS`) replaces `_generate_firm_slug` in
+`app/api/auth.py` and `_generate_slug` in `app/api/admin_invite.py`. A slug is
+taken if it is reserved, in `tenants.slug`, or in any `users.tenant_id`.
+Slugs before → after: `Ryze`, `RYZE!`, ` ryze ` gave `ryze`, now `ryze_1`;
+`R.Y.Z.E` gave and gives `r_y_z_e`. **Found during the audit-first step and
+closed in the same commit:** a company name with no ASCII letters or digits
+(`!!!`, empty, full-width characters) produced the empty slug `""`, which every
+`tenant_id or "ryze"` fallback treats as `ryze`; an empty base now becomes
+`firm`. `tests/test_tenant_slug.py`, 26 tests, run against the generator with
+a rolled-back session plus a check that both endpoints call it — the endpoints
+were not driven over HTTP because they commit and need Redis.
+
+**Bug 2 — commit `fb1fb01`.** Seven call sites in `app/api/bookings.py` and
+the reminder job in `app/services/scheduler.py` now pass
+`tenant_id=booking.tenant_id or RYZE_TENANT, db=db`. The eleven `notify_*`
+signatures end `*, tenant_id: str, db: Session`. All callers in the repo were
+listed first (`app/`, `tests/`, `scripts/`, root-level scripts): the eleven
+call sites are the only ones, so nothing else broke. The call sites wrap
+notifications in `try/except`, so a missing argument would only be logged at
+runtime; `tests/test_notify_call_sites.py` (AST walk over `app/` plus a
+signature check) is the guard. Run against the pre-fix code it failed, naming
+exactly the eight call sites and the eleven defaulted signatures; it passes
+after. The `or "ryze"` literal count in `bookings.py` is unchanged at 11.
+
+**Bug 3 — commit `52dca4e`.** `POST /api/admin/invite` depends on
+`get_current_superuser` and gates on
+`(tenant_id or RYZE_TENANT) == RYZE_TENANT`, the form `db_explorer.py` uses.
+An ADMIN on the `ryze` slug who is not a superuser can no longer create
+tenants; a NULL-tenant superuser now can. `tests/test_invite_gate.py`, 6 tests.
+
+**Verification.** `pytest -m "not semantic"`: baseline 3 failed, 11 passed;
+after 3 failed, 46 passed — the same three failures, no new ones, 35 new tests
+pass. The agreed bar was "no new failures against the baseline", because the
+three baseline failures (all in `tests/test_tenant_isolation.py`, listed with
+causes in the History) call the Intelligence chat tools against seed data the
+unseeded local database lacks, not the code this task changed. The database
+was not seeded. `python audit_tenant_coverage.py`: byte-identical to the
+baseline — 76 Safe, 19 Public/Skip, 0 Hardcoded, 0 Needs review.
+`uvicorn app.main:app` started clean, `GET /docs` → 200. One concern per
+commit; all pushed to `origin/main`.
+
+**Docs — commit `9dabc8b`.** `CLAUDE.md`: superadmin-gates bullet reworded,
+the "11 parameter defaults" bullet replaced by the reserved-slug-list bullet,
+the "Known risk" note replaced by "Notify call sites must name their tenant".
+`context/rebrand-audit.md`: one line under the header — line numbers are as of
+`6434b11`; tables not re-numbered.
+
+**Follow-ups, not done here.** Three tests in `tests/test_tenant_isolation.py`
+fail at baseline; get them green in their own task. Still open from the audit,
+each its own later task: the signup bucket (unmatched self-registrations land
+in `ryze`), the possible billing-check gap (39 inline tenant derivations), the
+seven `CLAUDE.md` corrections, the recruiting-firm framing in the AI prompts,
+and the rebrand itself. Flagged for Dane, not for Claude Code: the SMS-consent
+text and two emails name "RYZE GROUP, Inc." and must match the Twilio
+registration.
+
+History:
+- 2026-11-15 — Task drafted (Claude, chat) from `context/rebrand-audit.md` at
+  `6434b11` and a read-only look at `app/api/auth.py` and
+  `app/services/notifications.py`. No code changed.
+- 2026-11-15 — Baseline captured before any edit (Claude Code), at `51a95ca`.
+  `python audit_tenant_coverage.py`: 95 endpoints scanned — 76 Safe,
+  19 Public/Skip, 0 Hardcoded, 0 Needs review.
+  `pytest -m "not semantic"`: **3 failed, 11 passed, 3 skipped, 3 deselected.**
+  The 3 failures are all in `tests/test_tenant_isolation.py`
+  (`test_owning_tenant_sees_its_calls_by_date`,
+  `test_owning_tenant_finds_candidate_calls`,
+  `test_candidate_tool_boundary_excludes_employer_contacts`) — they assert
+  on `greenpath_recruiting` seed data and the local database is unseeded
+  (0 bookings, 0 tenants, 1 user). `pytest` was not installed in `venv/`;
+  installed it from `requirements-dev.txt` (pytest==9.1.1) to take the baseline.
+  Audit and plan presented to Dane; no code changed.
+- 2026-11-15 — Dane confirmed: Decisions 1a, 2a, 3a, 4a, 5a; reserved list
+  `ryze, greenscene, admin, api, platform`; close the empty-slug hole in the
+  Bug 1 commit with a `firm` fallback; pytest bar is "no new failures against
+  the baseline"; do not seed.
+  Baseline failures and causes (all three call the Intelligence chat tools in
+  `app/api/chat.py` against `greenpath_recruiting` seed rows that the unseeded
+  local database does not have; none imports or calls signup, the bookings
+  endpoints, notifications or the scheduler — two of them do read the
+  `bookings` table through those chat tools):
+  - `test_owning_tenant_sees_its_calls_by_date` — `tool_get_meetings_by_date`
+    returned 0 calls; expects the 2 seeded 2026-07-09 calls.
+  - `test_owning_tenant_finds_candidate_calls` — `tool_get_candidate_calls`
+    returned 0; expects seeded candidate Renata Voss.
+  - `test_candidate_tool_boundary_excludes_employer_contacts` — same tool,
+    same missing candidate.
+- 2026-11-15 — Bug 1 fixed, commit `b896344`. New
+  `app/services/tenant_slug.py` (`generate_tenant_slug`) replaces
+  `_generate_firm_slug` in `auth.py` and `_generate_slug` in
+  `admin_invite.py`. Reserved slugs are never issued; a slug in any
+  `users.tenant_id` counts as taken; an empty base becomes `firm`.
+  Slugs before → after: `Ryze` `ryze` → `ryze_1`; `RYZE!` `ryze` → `ryze_1`;
+  ` ryze ` `ryze` → `ryze_1`; `R.Y.Z.E` `r_y_z_e` → `r_y_z_e` (unchanged, never
+  was `ryze`); `!!!` and empty `""` → `firm`. `tests/test_tenant_slug.py`,
+  26 tests, tested at the generator plus a check that both endpoints call it
+  (the endpoints commit and need Redis, so they are not driven over HTTP).
+- 2026-11-15 — Bug 2 fixed, commit `fb1fb01`. The eight call sites pass
+  `tenant_id=booking.tenant_id or RYZE_TENANT, db=db`; the eleven `notify_*`
+  signatures now end `*, tenant_id: str, db: Session` (no defaults).
+  `tests/test_notify_call_sites.py` (static AST check + signature check) was
+  run against the pre-fix code first: 2 failed, naming exactly the eight call
+  sites and the 22 defaults; 3 passed after. The `or "ryze"` literal count in
+  `bookings.py` is unchanged at 11 (new sites use the constant).
+- 2026-11-15 — Bug 3 fixed, commit `52dca4e`. Invite endpoint depends on
+  `get_current_superuser` and gates on
+  `(tenant_id or RYZE_TENANT) == RYZE_TENANT`. `tests/test_invite_gate.py`,
+  6 tests.
+- 2026-11-15 — Verification. `pytest -m "not semantic"`: 3 failed, 46 passed,
+  3 skipped, 3 deselected — the same 3 baseline failures, no new ones, 35 new
+  tests pass. `python audit_tenant_coverage.py`: output byte-identical to the
+  baseline (76 Safe, 19 Public/Skip, 0 Hardcoded, 0 Needs review).
+  `uvicorn app.main:app` started clean and `GET /docs` → 200 (run on port
+  8011 because Dane's `--reload` server holds 8000; that one also returned
+  200 after reloading). Fix commits pushed to `origin/main`.
+- 2026-11-15 — Docs commit `9dabc8b` pushed to `origin/main`: the three
+  `CLAUDE.md` edits Dane approved (superadmin-gates bullet reworded; the
+  "11 parameter defaults" bullet replaced by a "Reserved slug list" bullet;
+  the "Known risk" note replaced by "Notify call sites must name their
+  tenant"), the line-number note under the header of
+  `context/rebrand-audit.md`, and this History.
+- 2026-11-15 — Follow-up: three tests in tests/test_tenant_isolation.py fail
+  at baseline; get them green in their own task.
+- 2026-11-15 — Confirmed complete by Dane. Archived; `current-feature.md` reset
+  to the blank template (no next task loaded).
+
 ## Backend rebrand audit — every `ryze` occurrence classified, findings only (completed 2026-11-15)
 Findings-only task, backend repo only. The single deliverable is
 `context/rebrand-audit.md`; no file under `app/`, `alembic/`, `tests/` or
